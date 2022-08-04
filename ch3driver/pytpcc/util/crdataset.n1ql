@@ -1,0 +1,23 @@
+drop dataset customer;
+drop dataset district;
+drop dataset history;
+drop dataset item;
+drop dataset nation;
+drop dataset neworder;
+drop dataset orders;
+drop dataset region;
+drop dataset stock;
+drop dataset supplier;
+drop dataset warehouse;
+
+create dataset customer on bench.ch3.customer;
+create dataset district on bench.ch3.district;
+create dataset history on bench.ch3.history;
+create dataset item on bench.ch3.item;
+create dataset neworder on bench.ch3.neworder;
+create dataset orders on bench.ch3.orders;
+create dataset stock on bench.ch3.stock;
+create dataset warehouse on bench.ch3.warehouse;
+create dataset supplier on bench.ch3.supplier;
+create dataset nation on bench.ch3.nation;
+create dataset region on bench.ch3.region;

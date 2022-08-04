@@ -1,0 +1,6 @@
+*.pyc
+*.config
+
+__pycache__/
+logs/
+*.log

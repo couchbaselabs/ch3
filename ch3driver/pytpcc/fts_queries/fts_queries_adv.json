@@ -1,0 +1,226 @@
+[
+    {
+        "name": "FQ07",
+        "index": "customerFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "match": "william designer",
+                "field": "c_data",
+                "operator": "and"
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ08",
+        "index": "itemFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "match": "Wheel pizza",
+                "field": "i_name",
+                "operator": "or"
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ09",
+        "index": "customerFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "should": {
+                    "disjuncts": [
+                        {
+                            "match": "william",
+                            "field": "c_data"
+                        },
+                        {
+                            "wildcard": "Jos*",
+                            "field": "c_first"
+                        }
+                    ]
+                }
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ10",
+        "index": "customerFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "must": {
+                    "conjuncts": [
+                        {
+                            "match": "Josh",
+                            "field": "c_first",
+                            "fuzziness": 2,
+                            "prefix_length": 3
+                        },
+                        {
+                            "match": "City",
+                            "field": "c_city"
+                        },
+                        {
+                            "match": "gmail",
+                            "field": "c_data",
+                            "fuzziness": 2
+                        }
+                    ]
+                }
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ11",
+        "index": "mutiCollectionFTSI",
+        "query": {
+            "query": {
+                "disjuncts": [
+                    {
+                        "wildcard": "*gmail*",
+                        "field": "c_data"
+                    },
+                    {
+                        "match": "Drive",
+                        "field": "c_street_1"
+                    },
+                    {
+                        "match": "City",
+                        "field": "c_city"
+                    },
+                    {
+                        "match": "City",
+                        "field": "d_city"
+                    }
+                ]
+            },
+            "fields": [
+                "*"
+            ],
+            "collections": [
+                "customer",
+                "district"
+            ],
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ12",
+        "index": "mutiCollectionFTSI",
+        "query": {
+            "query": {
+                "disjuncts": [
+                    {
+                        "match": "Warren",
+                        "field": "c_street_1"
+                    },
+                    {
+                        "match": "Lawyer",
+                        "field": "c_data"
+                    },
+                    {
+                        "match": "Dallas",
+                        "field": "d_city"
+                    }
+                ]
+            },
+            "fields": [
+                "*"
+            ],
+            "collections": [
+                "customer",
+                "district"
+            ],
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ13",
+        "index": "mutiCollectionFTSI",
+        "query": {
+            "query": {
+                "disjuncts": [
+                    {
+                        "wildcard": "*gmail*",
+                        "field": "c_data"
+                    },
+                    {
+                        "match": "Drive",
+                        "field": "c_street_1"
+                    },
+                    {
+                        "match": "City",
+                        "field": "c_city"
+                    },
+                    {
+                        "match": "City",
+                        "field": "d_city"
+                    },
+                    {
+                        "start": "2016-01-01",
+                        "end": "2016-10-30",
+                        "field": "o_entry_d"
+                    }
+                ]
+            },
+            "fields": [
+                "*"
+            ],
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ14",
+        "index": "ngramFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "disjuncts": [
+                    {
+                        "match": "Expert opinion",
+                        "field": "h_data"
+                    },
+                    {
+                        "match": "international policy",
+                        "field": "s_data"
+                    }
+                ]
+            },
+            "size": 5,
+            "from": 0
+        }
+    }
+]

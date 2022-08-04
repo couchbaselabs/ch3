@@ -1,0 +1,108 @@
+[
+    {
+        "name": "FQ15",
+        "index": "nonAnalyticFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+              "*"
+            ],
+            "highlight": {},
+            "query": {
+              "regexp": "ORIGINAL.+",
+              "field": "s_data"
+            },
+            "size": 5,
+            "from": 0
+          }          
+    },
+    {
+        "name": "FQ16",
+        "index": "nonAnalyticFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+              "*"
+            ],
+            "highlight": {},
+            "query": {
+              "term": "gallery",
+              "field": "c_data"
+            },
+            "size": 5,
+            "from": 0
+          }          
+    },
+    {
+        "name": "FQ17",
+        "index": "nonAnalyticFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+              "*"
+            ],
+            "highlight": {},
+            "query": {
+              "terms": [
+                "engineer",
+                "biomedical"
+              ],
+              "field": "c_data"
+            },
+            "size": 5,
+            "from": 0
+          }          
+    },
+    {
+        "name": "FQ18",
+        "index": "nonAnalyticFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+              "*"
+            ],
+            "highlight": {},
+            "query": {
+              "term": "French",
+              "field": "su_address",
+              "fuzziness": 2
+            },
+            "size": 5,
+            "from": 0
+          }          
+    },
+    {
+        "name": "FQ19",
+        "index": "nonAnalyticFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+              "*"
+            ],
+            "highlight": {},
+            "query": {
+              "prefix": "ice",
+              "field": "su_address"
+            },
+            "size": 5,
+            "from": 0
+          }          
+    },
+    {
+        "name": "FQ20",
+        "index": "nonAnalyticFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+              "*"
+            ],
+            "highlight": {},
+            "query": {
+              "wildcard": "*ment*",
+              "field": "c_data"
+            },
+            "size": 5,
+            "from": 0
+          }          
+    }
+]

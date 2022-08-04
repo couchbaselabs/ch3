@@ -1,0 +1,108 @@
+[
+    {
+        "name": "FQ01",
+        "index": "ordersFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "start": "2015-01-01",
+                "end": "2016-10-30",
+                "field": "o_entry_d"
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ02",
+        "index": "customerFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "match": "Drive",
+                "field": "c_street_1"
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ03",
+        "index": "itemFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "match": "Pizza",
+                "field": "i_name"
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ04",
+        "index": "itemFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "match": "Printed",
+                "field": "i_data",
+                "fuzziness": 2
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ05",
+        "index": "customerFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "match": "william",
+                "field": "c_data",
+                "fuzziness": 2,
+                "prefix_length": 4
+            },
+            "size": 5,
+            "from": 0
+        }
+    },
+    {
+        "name": "FQ06",
+        "index": "ngramFTSI",
+        "query": {
+            "explain": false,
+            "fields": [
+                "*"
+            ],
+            "highlight": {},
+            "query": {
+                "match": "machinery equipment sold",
+                "field": "s_data"
+            },
+            "size": 5,
+            "from": 0
+        }
+    }
+]
