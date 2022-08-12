@@ -471,9 +471,9 @@ class Results:
             if overall_avg_resp_time[query][1] > 0:
                 ret += f % (query, round(overall_avg_resp_time[query][0], 2))
         ret += "\n" + ("-"*total_width)
-        ret += "\n" + ("OVERALL GEOMETRIC MEAN = %.02f" %(round(overall_geo_mean**(1./overall_num_queries), 2)))
-        ret += "\n" + ("AVERAGE TIME PER QUERY SET = %.02f" %(round(sum_avg_resp_time, 2)))
-        ret += "\n" + ("QUERIES PER HOUR (Qph) = %.02f" %(round(overall_num_queries * 3600/sum_avg_resp_time*numAClients, 2)))
+        ret += "\n" + ("OVERALL ANALYTICS GEOMETRIC MEAN = %.02f" %(round(overall_geo_mean**(1./overall_num_queries), 2)))
+        ret += "\n" + ("AVERAGE TIME PER ANALYTICS QUERY SET = %.02f" %(round(sum_avg_resp_time, 2)))
+        ret += "\n" + ("ANAYTICS QUERIES PER HOUR (Qph) = %.02f" %(round(overall_num_queries * 3600/sum_avg_resp_time*numAClients, 2)))
         
         ret += "\n" + ("-"*total_width)
 
