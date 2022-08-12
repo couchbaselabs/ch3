@@ -504,13 +504,16 @@ class NestcollectionsDriver(AbstractDriver):
         "name":         ("Not Needed for N1QL", "tpcc"),
         "denormalize":  ("If set to true, then the CUSTOMER data will be denormalized into a single document", False),
     }
-    query_file = open("/root/ch3/ch3driver/pytpcc/fts_queries/fts_queries_simple.json")
+
+    # Read FTS queries from JSON files
+    fileDir = os.path.dirname(os.path.realpath(__file__))
+    query_file = open(os.path.join(fileDir, '../fts_queries/fts_queries_simple.json'))
     simple_fts_queries = json.load(query_file)
     query_file.close()
-    query_file = open("/root/ch3/ch3driver/pytpcc/fts_queries/fts_queries_adv.json")
+    query_file = open(os.path.join(fileDir, '../fts_queries/fts_queries_adv.json'))
     adv_fts_queries = json.load(query_file)
     query_file.close()
-    query_file = open("/root/ch3/ch3driver/pytpcc/fts_queries/fts_queries_nA.json")
+    query_file = open(os.path.join(fileDir, '../fts_queries/fts_queries_nA.json'))
     nonAnalytics_fts_queries = json.load(query_file)
     query_file.close()
 

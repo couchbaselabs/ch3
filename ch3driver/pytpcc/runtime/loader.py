@@ -57,18 +57,19 @@ def load(fname):
 def intRange(start,end):
     return random.randint(start,end)
 
-#Path to zip percentile files:
-ZIPDATA = "/root/ch3/ch3data/zipdata"
+dataDir = os.path.dirname(os.path.realpath(__file__))
+# Path to zip percentile files:
+ZIPDATA = os.path.join(dataDir, '../../../ch3data/zipdata')
 PctFiles = []
-#Load all our PopPercentile files into a array of arrays.
+# Load all our PopPercentile files into a array of arrays.
 popPercentiles=[]
 for _ in range(0,100):
   percentileNum = "0" + str(_)
   fileName = ZIPDATA + "/PopPercentile"+percentileNum[-2:]+".txt"
   popPercentiles.append(load(fileName))
 
-#Path to sample product data file:
-PRODUCT_FILE = "/root/ch3/ch3data/itemdata/flipkart_ecommerce.csv"
+# Path to sample product data file:
+PRODUCT_FILE = os.path.join(dataDir, '../../../ch3data/itemdata/flipkart_ecommerce.csv')
 products = load(PRODUCT_FILE)
 
 class Loader:
