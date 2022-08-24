@@ -77,6 +77,8 @@ class Results:
             status = "aborted"
             cnt = self.txn_status[txn_name].get(status, 0)
             self.txn_status[txn_name][status] = cnt + 1
+            return True
+        return False
         
     def stopTransaction(self, id, status):
         """Record that the benchmark completed an invocation of the given transaction"""
@@ -254,24 +256,30 @@ class Results:
 
         fts_stats_loop = [] #------ list to store summary of all clients, each element corresponds to each loop
         for qry_times in self.fts_query_times: # fts_query_times is a list, each element corresponds to one client
-            iter = 0
+            iter, loop = 0, 0
             for qry_dict in qry_times: # each dict corresponds to one loop of query execution
-                fts_stats_dict = {} #------- dict to store summary per loop over all clents
+                loop += 1
+                if loop <= self.warmupQueryIterations:
+                    continue
+                fts_stats_dict = {} #------- dict to store summary per loop over all clients
                 for qry in qry_dict:
                     total_exec_time = 0
                     for exec_time in qry_dict[qry]: # qry_dict[qry] is a list of executions per FTS queries
                         total_exec_time += exec_time[2]
-                    stas_per_qry = [qry, iter + 1, len(qry_dict[qry]), total_exec_time]
-                    fts_stats_dict[qry] = stas_per_qry
+                    stats_per_qry = [qry, loop, len(qry_dict[qry]), total_exec_time]
+                    fts_stats_dict[qry] = stats_per_qry
 
                     if iter + 1 <= len(fts_stats_loop):
-                        fts_stats_loop[iter][qry][2] += fts_stats_dict[qry][2]
-                        fts_stats_loop[iter][qry][3] += fts_stats_dict[qry][3]
+                        if qry in fts_stats_loop[iter].keys():
+                            fts_stats_loop[iter][qry][2] += fts_stats_dict[qry][2]
+                            fts_stats_loop[iter][qry][3] += fts_stats_dict[qry][3]
+                        else:
+                            fts_stats_loop[iter][qry] = fts_stats_dict[qry]
                 if iter + 1 > len(fts_stats_loop):
                     fts_stats_loop.append(fts_stats_dict)
                 iter += 1
         
-        iter = 0
+        iter = self.warmupQueryIterations
         for loop_stats in fts_stats_loop:
             total_execs_per_loop = 0
             total_exec_time_per_loop = 0
@@ -311,11 +319,11 @@ class Results:
                 overall_geo_mean *= overall_avg_fts_resp_time[query][0]
                 sum_avg_fts_resp_time += overall_avg_fts_resp_time[query][0]
 
-                if overall_num_queries <= 6: ## 6 simple FTS queries
+                if overall_num_queries <= constants.NUM_SIMPLE_QUERIES: ## 6 simple FTS queries
                     num_simple_qry += 1
                     simple_resp_time += overall_avg_fts_resp_time[query][0]
                     simple_geo_mean *= overall_avg_fts_resp_time[query][0]
-                elif overall_num_queries <= 6 + 8:  ## 8 advanced FTS queries
+                elif overall_num_queries <= constants.NUM_SIMPLE_QUERIES + constants.NUM_ADV_QUERIES:  ## 8 advanced FTS queries
                     num_adv_qry += 1
                     adv_resp_time += overall_avg_fts_resp_time[query][0]
                     adv_geo_mean *= overall_avg_fts_resp_time[query][0]

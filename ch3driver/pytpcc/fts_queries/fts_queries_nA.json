@@ -9,7 +9,7 @@
             ],
             "highlight": {},
             "query": {
-              "regexp": "ORIGINAL.+",
+              "regexp": "ORIGINALs.+",
               "field": "s_data"
             },
             "size": 5,

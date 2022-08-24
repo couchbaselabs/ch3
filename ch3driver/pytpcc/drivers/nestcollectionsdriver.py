@@ -378,8 +378,8 @@ def retvalN1QLQuery(prefix, rj):
                   if status == "key already exists, or CAS mismatch" :
                       status = "casmismatch"
 
-#        if status != "casmismatch" and status != "timeout" and status != "duplicates" and status != wwconflict" :
-#            print rj
+        # if status != "casmismatch" and status != "timeout" and status != "duplicates" and status != "wwconflict" :
+        #     print("---------- ",rj)
         if prefix != "" :
             status = prefix + "-" + status
     return rj['results'], status
@@ -442,26 +442,23 @@ def runNQueryParam(query, param, txid, randomhost):
 def generate_prepared_query (name):
     return {'prepared': '"' + name + '"'}
 
-def n1ql_execute(node, stmt, query=1, index=None):
+## ----------------------------------------------
+## n1ql_execute
+## ----------------------------------------------
+
+def n1ql_execute(node, stmt, query=1):
     global gcred
     global globpool
 #    headers = urllib3.make_headers(basic_auth='Administrator:password')
     headers = urllib3.make_headers(basic_auth=os.environ["USER_ID"] + ":" + os.environ["PASSWORD"])
-    fts_headers = urllib3.make_headers(basic_auth=os.environ["USER_ID"] + ":" + os.environ["PASSWORD"])
-    fts_headers['Content-Type'] = 'application/json'
-
-    if query == 1:
+    if query:
         stmt['creds'] = gcreds
         url = "http://{0}/query/service".format(node)
-    elif query == 2:
-        url = "http://{0}/api/index/{1}/query".format(node, index)
     else:
         url = "http://{0}/analytics/service".format(node)
     try:
-        if query == 1:
+        if query:
             response = globpool.request('POST', url, fields=stmt, encode_multipart=False)
-        elif query == 2:
-            response = globpool.request('POST', url, body=stmt, headers= fts_headers, encode_multipart= False)
         else:
             response = globpool.request('POST', url, fields=stmt, headers=headers, encode_multipart=False)
         response.read(cache_content=False)
@@ -501,6 +498,24 @@ def n1ql_load(query_node, stmt):
 #            pass
             logging.debug("retrying %d" %(i))
     ##FOR
+    return {}
+
+## ==============================================
+## fts_execute
+## ==============================================
+
+def fts_execute(node, stmt, index):
+    fts_headers = urllib3.make_headers(basic_auth=os.environ["USER_ID"] + ":" + os.environ["PASSWORD"])
+    fts_headers['Content-Type'] = 'application/json'
+
+    url = "http://{0}/api/index/{1}/query".format(node, index)    
+    try:
+        response = globpool.request('POST', url, body=stmt, headers= fts_headers, encode_multipart= False)
+        response.read(cache_content=False)
+        body = json.loads(response.data.decode('utf8'))
+        return body
+    except:
+        pass
     return {}
 
 ## ==============================================
@@ -830,9 +845,9 @@ class NestcollectionsDriver(AbstractDriver):
 
             newOrder, status = runNQueryParam(self.prepared_dict[ txn + "getNewOrder"], [d_id, w_id], txid, randomhost)
             if len(newOrder) == 0:
-                assert len(newOrder) > 0
                 ## No orders for this district: skip it. Note: This must be reported if > 1%
                 continue
+            assert len(newOrder) > 0
             no_o_id = newOrder[0]['no_o_id']
             rs, status = runNQueryParam(self.prepared_dict[ txn + "getCId"], [no_o_id, d_id, w_id],txid, randomhost)
             if (status != "success"):
@@ -909,7 +924,7 @@ class NestcollectionsDriver(AbstractDriver):
             rs, status = runNQueryParam(self.prepared_dict[ txn + "getItemInfo"], [i_ids[i]], txid, randomhost)
             if len(rs) == 0:
                 trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-                self.tx_status = "assert"
+                # self.tx_status = "assert"
                 return
                 assert len(rs) > 0
             items.append(rs[0])
@@ -936,11 +951,19 @@ class NestcollectionsDriver(AbstractDriver):
             w_tax = rs[0]['w_tax']
 
         district_info, status = runNQueryParam(self.prepared_dict[ txn +"getDistrict"], [d_id, w_id], txid, randomhost)
+        if (status != "success"):
+             trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
+             return
+        # assert district_info
         if len(district_info) != 0:
             d_tax = district_info[0]['d_tax']
             d_next_o_id = district_info[0]['d_next_o_id']
 
         rs, status = runNQueryParam(self.prepared_dict[ txn + "getCustomer"], [w_id, d_id, c_id], txid, randomhost)
+        if (status != "success"):
+             trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
+             return
+        # assert rs
         if len(rs) != 0:
             c_discount = rs[0]['c_discount']
 
@@ -1076,7 +1099,7 @@ class NestcollectionsDriver(AbstractDriver):
             customerlist,status = runNQueryParam(self.prepared_dict[ txn + "getCustomerByCustomerId"], [w_id, d_id, c_id], txid, randomhost)
             if len(customerlist) == 0 :
                  trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-                 self.tx_status = "assert"
+                #  self.tx_status = "assert"
                  return
                  assert len(customerlist) > 0
             customer = customerlist[0]
@@ -1085,7 +1108,7 @@ class NestcollectionsDriver(AbstractDriver):
             all_customers,status = runNQueryParam(self.prepared_dict[ txn + "getCustomersByLastName"], [w_id, d_id, c_last], txid, randomhost)
             if len(all_customers) == 0 :
                  trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-                 self.tx_status = "assert"
+                #  self.tx_status = "assert"
                  return
                  assert len(all_customers) > 0
             namecnt = len(all_customers)
@@ -1095,7 +1118,7 @@ class NestcollectionsDriver(AbstractDriver):
 
         if len(customer) == 0 or c_id == None :
             trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-            self.tx_status = "assert"
+            # self.tx_status = "assert"
             return
             assert (len(customer) > 0 or c_id != None)
 
@@ -1136,7 +1159,7 @@ class NestcollectionsDriver(AbstractDriver):
             customerlist,status = runNQueryParam(self.prepared_dict[ txn + "getCustomerByCustomerId"], [w_id, d_id, c_id], txid, randomhost)
             if len(customerlist) == 0 :
                  trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-                 self.tx_status = "assert"
+                #  self.tx_status = "assert"
                  return
                  assert len(customerlist) > 0
 
@@ -1146,7 +1169,7 @@ class NestcollectionsDriver(AbstractDriver):
             all_customers,status = runNQueryParam(self.prepared_dict[ txn + "getCustomersByLastName"], [w_id, d_id, c_last], txid, randomhost)
             if len(all_customers) == 0 :
                  trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-                 self.tx_status = "assert"
+                #  self.tx_status = "assert"
                  return
                  assert len(all_customers) > 0
 
@@ -1157,7 +1180,7 @@ class NestcollectionsDriver(AbstractDriver):
 
         if len(customer) == 0 or c_id == None :
             trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-            self.tx_status = "assert"
+            # self.tx_status = "assert"
             return
             assert (len(customer) > 0 or c_id != None)
 
@@ -1308,9 +1331,36 @@ class NestcollectionsDriver(AbstractDriver):
     ## ================================================================
     ## runFTSQueries
     ## ================================================================
-    def runFTSQueries(self, duration, endBenchmarkTime):
+    def runFTSQueries(self, duration, endBenchmarkTime, ftsQueryIterNum):
         qry_times = {}
         if self.TAFlag == "F":
+            if ftsQueryIterNum == 0:  # FTS warmup iteration
+                numFTSQueries = constants.MAX_TOTAL_FTS_QUERIES  # In warmup, execute max FTS queries
+                iter = 0
+                fts_queries = self.simple_fts_queries
+                while iter < numFTSQueries:
+                    for qry in fts_queries:
+                        q_times = []
+                        index = qry['index']
+                        stmt = json.dumps(qry['query'])
+                        q_name = qry['name']
+
+                        body = fts_execute(self.fts_node, stmt, index)
+                        if isinstance(body['status'], dict):
+                            q_times.append(self.client_id+1)
+                            q_times.append(iter+1)
+                            q_times.append(body['took']/1000000)  ## 'took' stores the time in nanoseconds
+                            if not q_name in qry_times.keys():
+                                qry_times[q_name] = []
+                            qry_times[q_name].append(q_times)
+                            iter += 1
+                    if iter % constants.NUM_FTS_QUERIES < constants.NUM_SIMPLE_QUERIES:
+                        fts_queries = self.simple_fts_queries
+                    elif iter % constants.NUM_FTS_QUERIES < (constants.NUM_SIMPLE_QUERIES + constants.NUM_ADV_QUERIES):
+                        fts_queries = self.adv_fts_queries
+                    else: fts_queries = self.nonAnalytics_fts_queries
+                return qry_times
+
             # Randomly pick number of FTS queries for each iteration of each FTS client
             numFTSQueries = rand.number(constants.MIN_TOTAL_FTS_QUERIES, constants.MAX_TOTAL_FTS_QUERIES)
             ftsIterNum = 0
@@ -1331,18 +1381,19 @@ class NestcollectionsDriver(AbstractDriver):
                     # In benchmark run mode, if the duration has elapsed, stop executing queries
                     if duration != None:
                         if start > endBenchmarkTime: break
-                    body = n1ql_execute(self.fts_node, stmt, 2, index)
+                    body = fts_execute(self.fts_node, stmt, index)
                     end = time.time()
                     # In benchmark run mode, if the duration has elapsed, stop reporting queries
                     if duration != None:
                         if end > endBenchmarkTime: break
 
-                    q_times.append(self.client_id+1)
-                    q_times.append(ftsIterNum+1)
-                    q_times.append(body['took']/1000000)  ## 'took' stores the time in nanoseconds
-                    if not q_name in qry_times.keys():
-                        qry_times[q_name] = []
-                    qry_times[q_name].append(q_times)
+                    if isinstance(body['status'], dict):
+                        q_times.append(self.client_id+1)
+                        q_times.append(ftsIterNum+1)
+                        q_times.append(body['took']/1000000)  ## 'took' stores the time in nanoseconds
+                        if not q_name in qry_times.keys():
+                            qry_times[q_name] = []
+                        qry_times[q_name].append(q_times)
                     ftsIterNum += 1
         return qry_times
 ## CLASS

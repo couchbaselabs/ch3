@@ -85,7 +85,8 @@ class Executor:
             if self.warmupDurationQ.qsize() > 0:
                 r.warmupDuration = self.warmupDurationQ.get()
                 self.warmupDuration = r.warmupDuration
-                self.warmupDurationQ.put(r.warmupDuration)
+                if numFTSClients == 0:
+                    self.warmupDurationQ.put(r.warmupDuration)
                 
             if duration != None:
                 if (time.time() - start) > duration:
@@ -104,7 +105,7 @@ class Executor:
                   
             if debug: logging.debug("Executing '%s' transaction" % txn)
             try:
-                val = self.driver.executeTransaction(txn, params, duration, etime, queryIterNum)
+                val = self.driver.executeTransaction(txn, params, duration, etime, queryIterNum, ftsQueryIterNum)
                 if self.TAFlag == "A":
                     queryIterNum += 1
                     r.query_times.append(val[0]) #executeTransaction returns a tuple [query_times, status]
@@ -134,10 +135,11 @@ class Executor:
                 return -1
             except (Exception, AssertionError) as ex:
                 logging.debug("Failed to execute Transaction '%s': %s" % (txn, ex))
-                logging.info("Failed to execute Transaction '%s': %s" % (txn, ex))
+                # logging.info("Failed to execute Transaction '%s': %s" % (txn, ex))
                 if debug: traceback.print_exc(file=sys.stdout)
                 if self.stop_on_error: raise
-                r.abortTransaction(txn_id)
+                is_abort = r.abortTransaction(txn_id)
+                if is_abort: logging.info("Failed to execute Transaction '%s': %s" % (txn, ex))
                 continue
 
             #if debug: logging.debug("%s\nParameters:\n%s\nResult:\n%s" % (txn, pformat(params), pformat(val)))

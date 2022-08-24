@@ -95,7 +95,7 @@ class AbstractDriver(object):
         """Callback after the execution phase finishes"""
         return None
         
-    def executeTransaction(self, txn, params, duration, endBenchmarkTime, queryIterNum):
+    def executeTransaction(self, txn, params, duration, endBenchmarkTime, queryIterNum, ftsQueryIterNum):
         """Execute a transaction based on the given name"""
         if constants.TransactionTypes.DELIVERY == txn:
             result = self.doDelivery(params)
@@ -110,7 +110,7 @@ class AbstractDriver(object):
         elif constants.QueryTypes.CH2 == txn:
             result = self.runCH2Queries(duration, endBenchmarkTime, queryIterNum)
         elif constants.QueryTypes.FTS == txn:
-            result = self.runFTSQueries(duration, endBenchmarkTime)
+            result = self.runFTSQueries(duration, endBenchmarkTime, ftsQueryIterNum)
         else:
             assert False, "Unexpected TransactionType: " + txn
         return result, self.txStatus()
