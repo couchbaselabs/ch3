@@ -13,7 +13,7 @@
                 "end": "2016-10-30",
                 "field": "o_entry_d"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -30,7 +30,7 @@
                 "match": "Drive",
                 "field": "c_street_1"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -47,7 +47,7 @@
                 "match": "Pizza",
                 "field": "i_name"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -65,7 +65,7 @@
                 "field": "i_data",
                 "fuzziness": 2
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -84,7 +84,7 @@
                 "fuzziness": 2,
                 "prefix_length": 4
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -101,7 +101,7 @@
                 "match": "machinery equipment sold",
                 "field": "s_data"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     }

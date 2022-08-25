@@ -26,6 +26,7 @@
 
 from asyncore import loop
 import logging
+from operator import ge
 import time
 import constants
 
@@ -42,7 +43,9 @@ class Results:
         self.txn_times = { }
         self.running = { }
         self.query_times = []
-        self.fts_query_times = []
+        self.simple_query_times = []
+        self.adv_query_times = []
+        self.na_query_times = []
         
     def startBenchmark(self):
         """Mark the benchmark as having been started"""
@@ -123,11 +126,25 @@ class Results:
         if len(r.query_times) == 0:
             self.stop = r.stop
         
-        if len(r.fts_query_times) > 0:
-            self.fts_query_times.append(r.fts_query_times)
+        if len(r.simple_query_times) > 0:
+            self.simple_query_times.append(r.simple_query_times)
         ## HACK
         self.start = r.start
-        if len(r.fts_query_times) == 0:
+        if len(r.simple_query_times) == 0:
+            self.stop = r.stop
+        
+        if len(r.adv_query_times) > 0:
+            self.adv_query_times.append(r.adv_query_times)
+        ## HACK
+        self.start = r.start
+        if len(r.adv_query_times) == 0:
+            self.stop = r.stop
+        
+        if len(r.na_query_times) > 0:
+            self.na_query_times.append(r.na_query_times)
+        ## HACK
+        self.start = r.start
+        if len(r.na_query_times) == 0:
             self.stop = r.stop
             
     def __str__(self):
@@ -186,7 +203,7 @@ class Results:
         total_txn_cnt = 0
         total_avg_time = 0
         for txn in sorted(self.txn_counters.keys()):
-            if txn == constants.QueryTypes.CH2 or txn == constants.QueryTypes.FTS:
+            if txn == constants.QueryTypes.CH2 or txn == constants.QueryTypes.SIMPLE_FTS or txn == constants.QueryTypes.ADV_FTS or txn == constants.QueryTypes.NA_FTS:
                 continue
             txn_time = self.txn_times[txn]
             txn_cnt = self.txn_counters[txn]
@@ -200,7 +217,7 @@ class Results:
             ret += "("
             i = 0
             for k in sorted(self.txn_status[txn].keys()):
-                if txn == constants.QueryTypes.CH2 or txn == constants.QueryTypes.FTS:
+                if txn == constants.QueryTypes.CH2 or txn == constants.QueryTypes.SIMPLE_FTS or txn == constants.QueryTypes.ADV_FTS or txn == constants.QueryTypes.NA_FTS:
                     continue
                 if i != 0 :
                    ret += ", "
@@ -221,8 +238,8 @@ class Results:
     ## ================================================================
     def print_fts_stats(self, ret, duration, queryIterations, warmupTime, numClients, numFClients):
         col_width = 20
-        total_width = (col_width*5)+5
-        f = "\n  " + (("%-" + str(col_width) + "s")*5)
+        total_width = (col_width*4)+5
+        f = "\n  " + (("%-" + str(col_width) + "s")*4)
         line = "-"*total_width
         if duration != None:
             if warmupTime == 0:
@@ -241,130 +258,70 @@ class Results:
             else:
                 ret += "\n\n\nFTS Execution Results after %d query iterations and %d FTS clients\n%s" % (queryIterations, numFClients, line)
 
-        overall_avg_fts_resp_time = {"FQ01": [0, 0], "FQ02": [0, 0], "FQ03": [0, 0], "FQ04": [0, 0], 
-                                     "FQ05": [0, 0], "FQ06": [0, 0], "FQ07": [0, 0], "FQ08": [0, 0],
-                                     "FQ09": [0, 0], "FQ10": [0, 0], "FQ11": [0, 0], "FQ12": [0, 0],
-                                     "FQ13": [0, 0], "FQ14": [0, 0], "FQ15": [0, 0], "FQ16": [0, 0],
-                                     "FQ17": [0, 0], "FQ18": [0, 0], "FQ19": [0, 0], "FQ20": [0, 0]}
-
         #HACK
         if numClients == 1:
             # Make self.query_times an array of arrays to keep the show() code consistent
             tmp = []
             tmp.append(self.fts_query_times)
             self.fts_query_times = tmp
-
-        fts_stats_loop = [] #------ list to store summary of all clients, each element corresponds to each loop
-        for qry_times in self.fts_query_times: # fts_query_times is a list, each element corresponds to one client
-            iter, loop = 0, 0
+        
+        fts_stats = {}
+        for qry_times in self.simple_query_times: # each array element corresponds to one client
             for qry_dict in qry_times: # each dict corresponds to one loop of query execution
-                loop += 1
-                if loop <= self.warmupQueryIterations:
-                    continue
-                fts_stats_dict = {} #------- dict to store summary per loop over all clients
                 for qry in qry_dict:
-                    total_exec_time = 0
-                    for exec_time in qry_dict[qry]: # qry_dict[qry] is a list of executions per FTS queries
+                    total_execs, total_exec_time = 0, 0
+                    for exec_time in qry_dict[qry]:
                         total_exec_time += exec_time[2]
-                    stats_per_qry = [qry, loop, len(qry_dict[qry]), total_exec_time]
-                    fts_stats_dict[qry] = stats_per_qry
+                        total_execs += 1
+                    if qry not in fts_stats.keys():
+                        fts_stats[qry] = [qry, total_execs, total_exec_time]
+                    else:
+                        fts_stats[qry][1] += total_execs
+                        fts_stats[qry][2] += total_exec_time
+        for qry_times in self.adv_query_times: # each array element corresponds to one client
+            for qry_dict in qry_times: # each dict corresponds to one loop of query execution
+                for qry in qry_dict:
+                    total_execs, total_exec_time = 0, 0
+                    for exec_time in qry_dict[qry]:
+                        total_exec_time += exec_time[2]
+                        total_execs += 1
+                    if qry not in fts_stats.keys():
+                        fts_stats[qry] = [qry, total_execs, total_exec_time]
+                    else:
+                        fts_stats[qry][1] += total_execs
+                        fts_stats[qry][2] += total_exec_time
+        for qry_times in self.na_query_times: # each array element corresponds to one client
+            for qry_dict in qry_times: # each dict corresponds to one loop of query execution
+                for qry in qry_dict:
+                    total_execs, total_exec_time = 0, 0
+                    for exec_time in qry_dict[qry]:
+                        total_exec_time += exec_time[2]
+                        total_execs += 1
+                    if qry not in fts_stats.keys():
+                        fts_stats[qry] = [qry, total_execs, total_exec_time]
+                    else:
+                        fts_stats[qry][1] += total_execs
+                        fts_stats[qry][2] += total_exec_time
 
-                    if iter + 1 <= len(fts_stats_loop):
-                        if qry in fts_stats_loop[iter].keys():
-                            fts_stats_loop[iter][qry][2] += fts_stats_dict[qry][2]
-                            fts_stats_loop[iter][qry][3] += fts_stats_dict[qry][3]
-                        else:
-                            fts_stats_loop[iter][qry] = fts_stats_dict[qry]
-                if iter + 1 > len(fts_stats_loop):
-                    fts_stats_loop.append(fts_stats_dict)
-                iter += 1
-        
-        iter = self.warmupQueryIterations
-        for loop_stats in fts_stats_loop:
-            total_execs_per_loop = 0
-            total_exec_time_per_loop = 0
-            total_avg_time = 0
-            geo_mean = 1
-            
-            iter += 1
-            ret += f % ("Query", "Loop", "Executed", u"Total Time (ms)", u"Avg. Elapsed Time (ms)")
-            for qry in loop_stats:
-                total_execs_per_loop += loop_stats[qry][2]
-                total_exec_time_per_loop += loop_stats[qry][3] 
-                avg_time = round(loop_stats[qry][3]/loop_stats[qry][2], 2)
-                total_avg_time += avg_time
-                geo_mean *= avg_time
-                ret += f % (qry, loop_stats[qry][1], loop_stats[qry][2], round(loop_stats[qry][3], 2), avg_time)
-                overall_avg_fts_resp_time[qry][0] += round(avg_time, 2)
-                overall_avg_fts_resp_time[qry][1] += 1
-            
-            total_queries = len(loop_stats)
-            ret += "\n" + ("-"*total_width)
-            ret += f % ("TOTAL (Loop " + str(iter) + ")", "", total_execs_per_loop, str(round(total_exec_time_per_loop, 2)), str(round(total_avg_time, 2)))
-            ret += "\n" + ("-"*col_width) + "\nOn Average:"
-            ret += "\t" + ("QUERIES RUN = %d \t TOTAL TIME = %.02f \t GEOMETRIC MEAN = %.02f \t  ARITHMETIC MEAN = %.02f" %(total_queries, round(total_avg_time, 2), round(geo_mean**(1./total_queries), 2), round(total_avg_time/total_queries, 2)))
-            ret += "\n" + ("-"*col_width)
-            ret += '\n\n'
-        
-        overall_geo_mean = 1
-        overall_num_queries = 0
-        sum_avg_fts_resp_time = 0
-        simple_geo_mean, adv_geo_mean, na_geo_mean = 1, 1, 1
-        simple_resp_time, adv_resp_time, na_resp_time = 0, 0, 0
-        num_simple_qry, num_adv_qry, num_na_query = 0, 0, 0
-        for query in overall_avg_fts_resp_time:
-            if overall_avg_fts_resp_time[query][1] > 0:
-                overall_num_queries += 1
-                overall_avg_fts_resp_time[query][0] /= overall_avg_fts_resp_time[query][1]
-                overall_geo_mean *= overall_avg_fts_resp_time[query][0]
-                sum_avg_fts_resp_time += overall_avg_fts_resp_time[query][0]
+        # Average is calculated for each FTS query, Geo_mean is calculated based on the average
+        geo_mean, total_avg_time, total_execs, total_exec_time = 1, 0, 0, 0
+        ret += f % ("Query", "Executed", u"Total Time (ms)", u"Avg. Elapsed Time (ms)")
+        for qry in fts_stats:
+            total_execs += fts_stats[qry][1]
+            total_exec_time += fts_stats[qry][2]
+            avg_time = fts_stats[qry][2]/fts_stats[qry][1]
+            total_avg_time += avg_time
+            geo_mean *= avg_time
+            ret += f % (qry, fts_stats[qry][1], round(fts_stats[qry][2], 2), round(avg_time, 2))
 
-                if overall_num_queries <= constants.NUM_SIMPLE_QUERIES: ## 6 simple FTS queries
-                    num_simple_qry += 1
-                    simple_resp_time += overall_avg_fts_resp_time[query][0]
-                    simple_geo_mean *= overall_avg_fts_resp_time[query][0]
-                elif overall_num_queries <= constants.NUM_SIMPLE_QUERIES + constants.NUM_ADV_QUERIES:  ## 8 advanced FTS queries
-                    num_adv_qry += 1
-                    adv_resp_time += overall_avg_fts_resp_time[query][0]
-                    adv_geo_mean *= overall_avg_fts_resp_time[query][0]
-                else:    ## 6 non-analytical FTS queries
-                    num_na_query += 1
-                    na_resp_time += overall_avg_fts_resp_time[query][0]
-                    na_geo_mean *= overall_avg_fts_resp_time[query][0]
-
-        if sum_avg_fts_resp_time == 0:
-            return(ret)
-        
-        col_width = 25
-        total_width = (col_width*2)+10
-        f = "\n  " + (("%-" + str(col_width) + "s")*2)
-        line = "-"*total_width
-        ret += "\n" + ("OVERALL RESULTS FOR COMPLETED FTS QUERY SETS")
         ret += "\n" + ("-"*total_width)
-        ret += f % ("Query", u"Average Response Time (ms)")
+        ret += f % ("TOTAL",  total_execs, str(round(total_exec_time, 2)), str(round(total_avg_time, 2)))
         ret += "\n" + ("-"*total_width)
-        for query in overall_avg_fts_resp_time:
-            if overall_avg_fts_resp_time[query][1] > 0:
-                ret += f % (query, round(overall_avg_fts_resp_time[query][0], 2))
-        ret += "\n" + ("-"*total_width)
-        ret += "\n" + ("OVERALL FTS GEOMETRIC MEAN = %.02f" %(round(overall_geo_mean**(1./overall_num_queries), 2)))
-        ret += "\n" + ("AVERAGE TIME PER FTS QUERY SET = %.02f" %(round(sum_avg_fts_resp_time, 2)))
-        ret += "\n" + ("FTS QUERIES PER HOUR (Qph) = %.02f" %(round(overall_num_queries * 3600 * 1000/sum_avg_fts_resp_time*numFClients, 2)))
+        ret += "\n" + ("OVERALL FTS GEOMETRIC MEAN = %.02f" %(round(geo_mean**(1./constants.NUM_FTS_QUERIES), 2)))
+        ret += "\n" + ("AVERAGE TIME PER FTS QUERY SET = %.02f" %(round(total_avg_time, 2)))
+        ret += "\n" + ("AVERAGE TIME PER FTS CLIENT = %.02f" %(round(total_exec_time/numFClients , 2)))
+        ret += "\n" + ("FTS QUERIES PER HOUR (Qph) = %.02f" %(round(constants.NUM_FTS_QUERIES * 3600 * 1000/total_avg_time*numFClients, 2)))
         
-        ret += "\n\n" + ("-"*col_width*2)
-        ret += "\n" + ("GEOMETRIC MEAN (Simple: FQ01-FQ06) = %.02f" %(round(simple_geo_mean**(1./num_simple_qry), 2)))
-        ret += "\n" + ("AVERAGE TIME PER QUERY SET (simple) = %.02f" %(round(simple_resp_time, 2)))
-        ret += "\n" + ("QUERIES PER HOUR (Qph) = %.02f" %(round(num_simple_qry * 3600 * 1000/simple_resp_time*numFClients, 2)))
-        ret += "\n" + ("-"*col_width*2)
-        ret += "\n" + ("GEOMETRIC MEAN (Advanced: FQ07-FQ14) = %.02f" %(round(adv_geo_mean**(1./num_adv_qry), 2)))
-        ret += "\n" + ("AVERAGE TIME PER QUERY SET (advanced) = %.02f" %(round(adv_resp_time, 2)))
-        ret += "\n" + ("QUERIES PER HOUR (Qph) = %.02f" %(round(num_adv_qry * 3600 * 1000/adv_resp_time*numFClients, 2)))
-        ret += "\n" + ("-"*col_width*2)
-        ret += "\n" + ("GEOMETRIC MEAN (NA: FQ15-FQ20) = %.02f" %(round(na_geo_mean**(1./num_na_query), 2)))
-        ret += "\n" + ("AVERAGE TIME PER QUERY SET (non-analytics) = %.02f" %(round(na_resp_time, 2)))
-        ret += "\n" + ("QUERIES PER HOUR (Qph) = %.02f" %(round(num_na_query * 3600 * 1000/na_resp_time*numFClients, 2)))
-        ret += "\n" + ("-"*col_width*2) + "\n"
-
         ret += "\n" + ("-"*total_width)
         return ret
 

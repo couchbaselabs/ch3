@@ -72,26 +72,24 @@ class Executor:
         debug = logging.getLogger().isEnabledFor(logging.DEBUG)
         tnum = 0
         queryIterNum = 0
-        ftsQueryIterNum = 0
         stime = time.time()
         etime = stime
         if duration != None:
             etime = stime + duration
 
         while 1:
-            if self.warmupDuration == None and self.warmupQueryIterations != None and (queryIterNum == self.warmupQueryIterations or ftsQueryIterNum == self.warmupQueryIterations):
+            if self.warmupDuration == None and self.warmupQueryIterations != None and queryIterNum == self.warmupQueryIterations:
                 self.warmupDuration = time.time() - start
                 self.warmupDurationQ.put(self.warmupDuration)
             if self.warmupDurationQ.qsize() > 0:
                 r.warmupDuration = self.warmupDurationQ.get()
                 self.warmupDuration = r.warmupDuration
-                if numFTSClients == 0:
-                    self.warmupDurationQ.put(r.warmupDuration)
+                self.warmupDurationQ.put(r.warmupDuration)
                 
             if duration != None:
                 if (time.time() - start) > duration:
                     break
-            elif self.qDone.qsize() == numAnalyticsClients + numFTSClients:
+            elif self.qDone.qsize() == numAnalyticsClients:
                 break
             
             txn, params = self.doOne()
@@ -105,7 +103,7 @@ class Executor:
                   
             if debug: logging.debug("Executing '%s' transaction" % txn)
             try:
-                val = self.driver.executeTransaction(txn, params, duration, etime, queryIterNum, ftsQueryIterNum)
+                val = self.driver.executeTransaction(txn, params, duration, etime, queryIterNum)
                 if self.TAFlag == "A":
                     queryIterNum += 1
                     r.query_times.append(val[0]) #executeTransaction returns a tuple [query_times, status]
@@ -119,17 +117,14 @@ class Executor:
                     else:
                         continue
                 elif self.TAFlag == "F":
-                    ftsQueryIterNum += 1
-                    r.fts_query_times.append(val[0]) #executeTransaction returns a tuple [fts_query_times, status]
-                    
-                    # Stopping criteria based on FTS query iterations.
-                    if duration == None:
-                        if ftsQueryIterNum == numQueryIterations:
-                            self.qDone.put('done')
-                            r.stopTransaction(txn_id, status)
-                            break
-                    else:
-                        continue
+                    # executeTransaction returns a tuple [_query_times, status] for FTS queries
+                    if self.warmupDuration != None:
+                        if txn == constants.QueryTypes.SIMPLE_FTS:
+                            r.simple_query_times.append(val[0])
+                        elif txn == constants.QueryTypes.ADV_FTS:
+                            r.adv_query_times.append(val[0])
+                        else:
+                            r.na_query_times.append(val[0])
                 status = self.driver.txStatus()
             except KeyboardInterrupt:
                 return -1
@@ -138,6 +133,7 @@ class Executor:
                 # logging.info("Failed to execute Transaction '%s': %s" % (txn, ex))
                 if debug: traceback.print_exc(file=sys.stdout)
                 if self.stop_on_error: raise
+                
                 is_abort = r.abortTransaction(txn_id)
                 if is_abort: logging.info("Failed to execute Transaction '%s': %s" % (txn, ex))
                 continue
@@ -173,7 +169,12 @@ class Executor:
         elif self.TAFlag == "A": #CH analytical queries
             txn, params = (constants.QueryTypes.CH2, None)
         elif self.TAFlag == "F": #FTS queries
-            txn, params = (constants.QueryTypes.FTS, None)
+            if x <= 25:          ## 25% simple FTS queries
+                txn, params = (constants.QueryTypes.SIMPLE_FTS, None)
+            elif x <= 25 + 35:   ## 35% non-analytic FTS queries
+                txn, params = (constants.QueryTypes.NA_FTS, None)
+            else:   ## 40% advanced FTS queries
+                txn, params = (constants.QueryTypes.ADV_FTS, None)
         else:
             assert False, "Unexpected TransactionType: " + txn        
         return (txn, params)

@@ -13,7 +13,7 @@
                 "field": "c_data",
                 "operator": "and"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -31,7 +31,7 @@
                 "field": "i_name",
                 "operator": "or"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -58,7 +58,7 @@
                     ]
                 }
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -92,7 +92,7 @@
                     ]
                 }
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -127,7 +127,7 @@
                 "customer",
                 "district"
             ],
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -158,7 +158,7 @@
                 "customer",
                 "district"
             ],
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -194,7 +194,7 @@
             "fields": [
                 "*"
             ],
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     },
@@ -219,7 +219,7 @@
                     }
                 ]
             },
-            "size": 5,
+            "size": 50,
             "from": 0
         }
     }

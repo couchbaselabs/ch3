@@ -364,8 +364,13 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if not args['no_execute']:
-        if (duration == None and (numAClients == 0 and numFClients == 0)):
-            logging.info("Need a duration parameter for transaction clients to run")
+        if (duration == None and numAClients == 0):
+            logging.info("Need a duration parameter for transaction/FTS clients to run")
+            sys.exit(0)
+    
+    if not args['no_execute']:
+        if (duration != None and numAClients > 0):
+            logging.info("Need a positive non-zero query-iterations parameter to run")
             sys.exit(0)
 
     if not args['no_execute']:

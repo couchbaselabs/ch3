@@ -292,7 +292,9 @@ TransactionTypes = enum(
 )
 QueryTypes = enum(
     "CH2",
-    "FTS",
+    "SIMPLE_FTS",
+    "ADV_FTS",
+    "NA_FTS",
 )
 
 # FTS query constants
@@ -300,8 +302,6 @@ NUM_FTS_QUERIES = 20
 NUM_SIMPLE_QUERIES = 6  # Simple FTS queries
 NUM_ADV_QUERIES = 8     # Advanced FTS queries
 NUM_NA_QUERIES = 6      # Non-analytic FTS queries
-MAX_TOTAL_FTS_QUERIES = 100
-MIN_TOTAL_FTS_QUERIES = 20
 
 NUM_CH2_QUERIES = 22
 CH2_QUERIES = {

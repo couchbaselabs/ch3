@@ -44,7 +44,6 @@ from urllib3.poolmanager import PoolManager
 
 import constants
 from .abstractdriver import *
-import random
 import time
 from datetime import timedelta
 
@@ -951,21 +950,21 @@ class NestcollectionsDriver(AbstractDriver):
             w_tax = rs[0]['w_tax']
 
         district_info, status = runNQueryParam(self.prepared_dict[ txn +"getDistrict"], [d_id, w_id], txid, randomhost)
-        if (status != "success"):
-             trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-             return
-        # assert district_info
+        # # assert district_info
         if len(district_info) != 0:
             d_tax = district_info[0]['d_tax']
             d_next_o_id = district_info[0]['d_next_o_id']
+        else:
+            trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
+            return
 
         rs, status = runNQueryParam(self.prepared_dict[ txn + "getCustomer"], [w_id, d_id, c_id], txid, randomhost)
-        if (status != "success"):
-             trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
-             return
         # assert rs
         if len(rs) != 0:
             c_discount = rs[0]['c_discount']
+        else:
+            trs, self.tx_status = runNQuery("rollback", self.prepared_dict[ txn + "rollbackWork"],txid,"",randomhost)
+            return
 
         ## ----------------
         ## Insert Order Information
@@ -1330,70 +1329,39 @@ class NestcollectionsDriver(AbstractDriver):
     
     ## ================================================================
     ## runFTSQueries
-    ## ================================================================
-    def runFTSQueries(self, duration, endBenchmarkTime, ftsQueryIterNum):
+    ## ================================================================    
+    def runFTSQueries(self, txn, duration, endBenchmarkTime):
         qry_times = {}
         if self.TAFlag == "F":
-            if ftsQueryIterNum == 0:  # FTS warmup iteration
-                numFTSQueries = constants.MAX_TOTAL_FTS_QUERIES  # In warmup, execute max FTS queries
-                iter = 0
-                fts_queries = self.simple_fts_queries
-                while iter < numFTSQueries:
-                    for qry in fts_queries:
-                        q_times = []
-                        index = qry['index']
-                        stmt = json.dumps(qry['query'])
-                        q_name = qry['name']
-
-                        body = fts_execute(self.fts_node, stmt, index)
-                        if isinstance(body['status'], dict):
-                            q_times.append(self.client_id+1)
-                            q_times.append(iter+1)
-                            q_times.append(body['took']/1000000)  ## 'took' stores the time in nanoseconds
-                            if not q_name in qry_times.keys():
-                                qry_times[q_name] = []
-                            qry_times[q_name].append(q_times)
-                            iter += 1
-                    if iter % constants.NUM_FTS_QUERIES < constants.NUM_SIMPLE_QUERIES:
-                        fts_queries = self.simple_fts_queries
-                    elif iter % constants.NUM_FTS_QUERIES < (constants.NUM_SIMPLE_QUERIES + constants.NUM_ADV_QUERIES):
-                        fts_queries = self.adv_fts_queries
-                    else: fts_queries = self.nonAnalytics_fts_queries
-                return qry_times
-
-            # Randomly pick number of FTS queries for each iteration of each FTS client
-            numFTSQueries = rand.number(constants.MIN_TOTAL_FTS_QUERIES, constants.MAX_TOTAL_FTS_QUERIES)
             ftsIterNum = 0
-            while ftsIterNum < numFTSQueries:
-                percentage = rand.number(1, 100)
-                if percentage <= 25:  # 25% simple FTS queries
-                    fts_queries = self.simple_fts_queries
-                elif percentage <= 25 + 35:  # 35% non-analytical FTS queries
-                    fts_queries = self.nonAnalytics_fts_queries
-                else: fts_queries = self.adv_fts_queries  # 40% advanced FTS queries
-                for qry in fts_queries:
-                    q_times = []
-                    index = qry['index']
-                    stmt = json.dumps(qry['query'])
-                    q_name = qry['name']
+            if txn == constants.QueryTypes.SIMPLE_FTS:  # 25% simple FTS queries
+                fts_queries = self.simple_fts_queries
+            elif txn == constants.QueryTypes.ADV_FTS:   # 35% non-analytical FTS queries
+                fts_queries = self.nonAnalytics_fts_queries
+            else: fts_queries = self.adv_fts_queries    # 40% advanced FTS queries
+            for qry in fts_queries:
+                q_times = []
+                index = qry['index']
+                stmt = json.dumps(qry['query'])
+                q_name = qry['name']
 
-                    start = time.time()
-                    # In benchmark run mode, if the duration has elapsed, stop executing queries
-                    if duration != None:
-                        if start > endBenchmarkTime: break
-                    body = fts_execute(self.fts_node, stmt, index)
-                    end = time.time()
-                    # In benchmark run mode, if the duration has elapsed, stop reporting queries
-                    if duration != None:
-                        if end > endBenchmarkTime: break
+                start = time.time()
+                # In benchmark run mode, if the duration has elapsed, stop executing queries
+                if duration != None:
+                    if start > endBenchmarkTime: break
+                body = fts_execute(self.fts_node, stmt, index)
+                end = time.time()
+                # In benchmark run mode, if the duration has elapsed, stop reporting queries
+                if duration != None:
+                    if end > endBenchmarkTime: break
 
-                    if isinstance(body['status'], dict):
-                        q_times.append(self.client_id+1)
-                        q_times.append(ftsIterNum+1)
-                        q_times.append(body['took']/1000000)  ## 'took' stores the time in nanoseconds
-                        if not q_name in qry_times.keys():
-                            qry_times[q_name] = []
-                        qry_times[q_name].append(q_times)
+                if isinstance(body['status'], dict):
+                    q_times.append(self.client_id+1)
+                    q_times.append(ftsIterNum+1)
+                    q_times.append(body['took']/1000000)  ## 'took' stores the time in nanoseconds
+                    if not q_name in qry_times.keys():
+                        qry_times[q_name] = []
+                    qry_times[q_name].append(q_times)
                     ftsIterNum += 1
         return qry_times
 ## CLASS

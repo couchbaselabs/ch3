@@ -12,7 +12,7 @@
               "regexp": "ORIGINALs.+",
               "field": "s_data"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
           }          
     },
@@ -29,7 +29,7 @@
               "term": "gallery",
               "field": "c_data"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
           }          
     },
@@ -49,7 +49,7 @@
               ],
               "field": "c_data"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
           }          
     },
@@ -67,7 +67,7 @@
               "field": "su_address",
               "fuzziness": 2
             },
-            "size": 5,
+            "size": 50,
             "from": 0
           }          
     },
@@ -84,7 +84,7 @@
               "prefix": "ice",
               "field": "su_address"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
           }          
     },
@@ -101,7 +101,7 @@
               "wildcard": "*ment*",
               "field": "c_data"
             },
-            "size": 5,
+            "size": 50,
             "from": 0
           }          
     }
