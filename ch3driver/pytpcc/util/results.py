@@ -229,7 +229,8 @@ class Results:
         ret += f % ("TOTAL", str(total_txn_cnt), str(round(total_txn_time * 1000,3)), round(total_avg_time, 2), total_rate)
         
         ret = self.print_analytics_stats(ret, duration, queryIterations, warmupTime, numClients, numAClients)
-        ret = self.print_fts_stats(ret, duration, queryIterations, warmupTime, numClients, numFClients)
+        if numFClients > 0:
+            ret = self.print_fts_stats(ret, duration, queryIterations, warmupTime, numClients, numFClients)
 
         return (ret)
     
