@@ -265,12 +265,12 @@ class Results:
             tmp = []
             tmp.append(self.simple_query_times)
             self.simple_query_times = tmp
-            tmp = []
+            tmp = []
             tmp.append(self.adv_query_times)
-            self.adv_query_times = tmp
-            tmp = []
+            self.adv_query_times = tmp
+            tmp = []
             tmp.append(self.na_query_times)
-            self.na_query_times = tmp
+            self.na_query_times = tmp
 
         fts_stats = {}
         for qry_times in self.simple_query_times: # each array element corresponds to one client
